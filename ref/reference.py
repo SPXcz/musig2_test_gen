@@ -608,7 +608,7 @@ def test_sign_verify_vectors() -> None:
     verify_fail_test_cases = test_data["verify_fail_test_cases"]
     verify_error_test_cases = test_data["verify_error_test_cases"]
 
-    for test_case in valid_test_cases:
+    for test_case, test_no in zip(valid_test_cases, range(0, len(valid_test_cases))):
         pubkeys = [X[i] for i in test_case["key_indices"]]
         pubnonces = [pnonce[i] for i in test_case["nonce_indices"]]
         aggnonce = aggnonces[test_case["aggnonce_index"]]

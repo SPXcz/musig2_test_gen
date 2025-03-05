@@ -88,7 +88,7 @@ def gen_sign_data():
     signatures = []
     no_of_participants = []
 
-    for _ in range(0, NO_OF_TESTS):
+    for i in range(0, NO_OF_TESTS):
 
         sk = secrets.token_bytes(KEY_LENGTH)
         pk = lib.individual_pk(sk)
@@ -111,14 +111,17 @@ def gen_sign_data():
             secnonces_grp.append(nonce[0])
             pubnonces_grp.append(nonce[1])
 
-        secnonce_tmp = secnonces_grp[current_signer_index]
+        secnonce_tmp = secnonces_grp[current_signer_index].copy()
         secnonces.append(secnonces_grp[current_signer_index].hex().upper())
         aggnonce = lib.nonce_agg(pubnonces_grp)
 
         # Sign
-        message_len = rnd.randint(1, MAX_MESSAGE_LEN)
-        message = rnd.randbytes(message_len)
-        psig = lib.sign(secnonce_tmp, sk, (aggnonce, pk_grp, [], [], message))
+        if i > 0:
+            message_len = rnd.randint(1, MAX_MESSAGE_LEN)
+            message = rnd.randbytes(message_len)
+        else:
+            message = bytes.fromhex("6DDF34F77F35D9D774EBBEFB7B7EFBE3D71F7F9EB8F34F3ADF7DBC79ADBD7FDF78F1CEDEDF571BEFCE757F5D37F1DEBD")
+        psig = lib.sign(secnonce_tmp, sk, (aggnonce, pk_grp, [], [], message)) 
 
         assert lib.partial_sig_verify_internal(psig, pubnonces_grp[current_signer_index], pk, (aggnonce, pk_grp, [], [], message))
 
@@ -141,7 +144,11 @@ def gen_sign_data():
         'noOfParticipants': no_of_participants,
     })
 
-    out_df.to_csv('data/sign_test.csv')
+    # Sort messages by length
+    s = out_df.messages.str.len().sort_values().index
+    sorted_out_df = out_df.reindex(s)
+
+    sorted_out_df.to_csv('data/sign_test.csv')
 
 
 def get_sk_pk() -> tuple[int, bytes]:
@@ -170,10 +177,13 @@ def sig_agg(psigs, aggnonce, pubkeys, msg):
     session_ctx = (aggnonce, pubkeys, [], [], msg)
     return lib.partial_sig_agg(psigs, session_ctx)
 
+def copy(secnonce) -> bytearray:
+    return secnonce
+
 def main():
     gen_sign_data()
-    #gen_keygen_data()
-    #gen_noncegen_data()
+    gen_keygen_data()
+    gen_noncegen_data()
 
 if __name__ == "__main__":
     main()
